@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+    <div class="chartContainer">
+    <canvas id="chart"></canvas>
+    </div>
+<head>
+    <meta charset="UTF-8">
+    <title>Brain--Computer Interface Fear and Expertise Survey</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+        fieldset {
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        label {
+            display: block;
+            margin: 8px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size 16px;
+        }
+        result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .chartContainer {
+            width: 40vw;
+            height: 40vh;
+            margin: 20px auto;
+        }
+
+    </style>
+</head>
+<body>
+
+<h1>Expertise and Fear Assessment</h1>
+
+<form id="surveyForm">
+
+    <fieldset>
+        <legend>About You</legend>
+
+        <label>
+            Age Group
+            <select id="ageGroup">
+                <option value="">Select</option>
+                <option value="under13">Under 13</option>
+                <option value="13-15">13-15</option>
+                <option value="16-18">16-18</option>
+                <option value="19-21">19-21</option>
+                <option value="22-29">22-30</option>
+                <option value="30-39">31-39</option>
+                <option value="40+">40+</option>
+            </select>
+        </label>
+
+        <label id="backgroundLabel">
+            Background/Interests:
+            <select id="background">
+                <option value="">Select</option>
+            </select>
+        </label>
+    </fieldset>
+
+    <fieldset>
+        <legend>Expertise Questions (1 = None, 5 = Expert)</legend>
+
+        <label for="eQ1">
+            Test 1
+            <input type="number" min="1" max="5" data-weight="2" class="expertise" id="eQ1">
+        </label>
+
+        <label for="eQ2">
+            Test 2
+            <input type="number" min="1" max="5" data-weight="1" class="expertise" id="eQ2">
+        </label>
+
+        <label for="eQ3">
+            Test 3
+            <input type="number" min="1" max="5" data-weight=".5" class="expertise" id="eQ3">
+        </label>
+    </fieldset>
+
+    <fieldset>
+        <legend>Fear Questions (1 = Not Afraid 5 = Terrified)</legend>
+
+        <label for="fQ1">
+            Test 1
+            <input type="number" min="1" max="5" data-weight="2" class="fear" id="fQ1">
+        </label>
+
+        <label for="fQ2">
+            Test 2
+            <input type="number" min="1" max="5" data-weight="1" class="fear" id="fQ2">
+        </label>
+
+        <label for="fQ3">
+            Test 3
+            <input type="number" min="1" max="5" data-weight=".5" class="fear" id="fQ3">
+        </label>
+    </fieldset>
+
+
+
+    <button type="submit">Submit</button>
+</form>
+
+<div class="chartBox" id="result">
+</div>
+
+<p id="output"></p>
+
+<script>
+
+    const ageGroupSelect = document.getElementById("ageGroup");
+    const backgroundSelect = document.getElementById("background");
+
+    ageGroupSelect.addEventListener("change", () => {
+        backgroundSelect.innerHTML = '<option value="">Select</option>';
+
+        const age = ageGroupSelect.value;
+
+        let options = [];
+
+        if (age === "under13" || age === "13-15" || age === "16-18") {
+            options = [
+                "a",
+                "b",
+                "c",
+                "d",
+                "e",
+                "f"
+            ];
+        } else {
+            options = [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6"
+            ];
+        }
+
+        options.forEach(opt => {
+            const option = document.createElement("option");
+            option.value = opt;
+            option.textContent = opt;
+            backgroundSelect.appendChild(option);
+        });
+    });
+
+
+    function displayValue() {
+        const fQ1Input = document.getElementById('fQ1');
+        const value = fQ1Input.value;
+
+        console.log("fQ1A is:", value);
+    }
+
+    const form = document.getElementById("surveyForm");
+    const resultDiv = document.getElementById("result");
+    const ctx = document.getElementById("chart").getContext("2d");
+
+    let chart;
+
+    function calculateWeightedAverage(inputs) {
+        let total = 0;
+        let weightSum = 0;
+
+        inputs.forEach(input => {
+            const value = Number(input.value);
+            const weight = Number(input.dataset.weight);
+
+            total += value * weight;
+            weightSum += weight;
+        });
+
+        return total / weightSum;
+    }
+
+    function categorize(score , type) {
+        if (type === "expertise") {
+            if (score < 2.5) return "Low Expertise";
+            if (score < 4) return "Moderate Expertise";
+            return "High Expertise";
+        } else {
+            if (score < 2.5) return "Low Fear";
+            if (score < 4) return "Moderate Fear";
+            return "High Fear";
+        }
+    }
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const expertiseInputs = document.querySelectorAll(".expertise");
+        const fearInputs = document.querySelectorAll(".fear");
+
+        const expertiseScore = calculateWeightedAverage(expertiseInputs);
+        const fearScore = calculateWeightedAverage(fearInputs);
+
+        const expertiseCategory = categorize(expertiseScore, "expertise");
+        const fearCategory = categorize(fearScore, "fear");
+
+        resultDiv.innerText =
+            `Expertise: ${expertiseCategory} (${expertiseScore.toFixed(2)})
+    Fear: ${fearCategory} (${fearScore.toFixed(2)})`;
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'User Position',
+                    data: [{
+                        x: expertiseScore,
+                        y: fearScore,
+                    }],
+                    pointRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        min: 1,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: 'Expertise'
+                        }
+                    },
+                    y: {
+                        min: 1,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: 'Fear'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+
+</body>
+</html>
