@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-    <div class="chartContainer">
-    <canvas id="chart"></canvas>
-    </div>
+
 <head>
     <meta charset="UTF-8">
     <title>Brain--Computer Interface Fear and Expertise Survey</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-
             font-family: Arial, sans-serif;
             margin: 30px;
         }
@@ -23,9 +20,9 @@
         }
         button {
             padding: 10px 20px;
-            font-size 16px;
+            font-size: 16px;
         }
-        result {
+        #result {
             margin-top: 20px;
             font-weight: bold;
         }
@@ -39,6 +36,10 @@
     </style>
 </head>
 <body>
+
+<div class="chartContainer">
+    <canvas id="chart"></canvas>
+</div>
 
 <h1>Expertise and Fear Assessment</h1>
 
@@ -117,10 +118,37 @@
 
 <p id="output"></p>
 
+<script type="module">
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp }
+        from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcmtwDG8v8xFrE_O_rG4iGx4Ffml_k4mY",
+      authDomain: "bci-survey.firebaseapp.com",
+      projectId: "bci-survey",
+      storageBucket: "bci-survey.firebasestorage.app",
+      messagingSenderId: "393276914994",
+      appId: "1:393276914994:web:180298eff945f796cf2b2b",
+      measurementId: "G-752C89XBK1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+
+    window.db = db;
+    window.addDoc = addDoc:
+    window.collection = collection;
+    window.serverTimestamp = serverTimestamp;
+
+</script>
+
 <script>
 
     const ageGroupSelect = document.getElementById("ageGroup");
     const backgroundSelect = document.getElementById("background");
+
 
     ageGroupSelect.addEventListener("change", () => {
         backgroundSelect.innerHTML = '<option value="">Select</option>';
@@ -198,8 +226,14 @@
         }
     }
 
-    form.addEventListener("submit", function (e) {
+
+    form.addEventListener("submit", async function (e) {
         e.preventDefault();
+
+        if (!ageGroupSelect.value || !backgroundSelect.value) {
+        alert("Please select your age group and background.");
+        return;
+        }
 
         const expertiseInputs = document.querySelectorAll(".expertise");
         const fearInputs = document.querySelectorAll(".fear");
@@ -207,12 +241,29 @@
         const expertiseScore = calculateWeightedAverage(expertiseInputs);
         const fearScore = calculateWeightedAverage(fearInputs);
 
+        const allInputs = [...expertiseInputs, ...fearInputs];
+
+        if (allInputs.some(input => input.value === "")) {
+        alert("Please answer all expertise and fear questions.");
+        return;
+        }
+
         const expertiseCategory = categorize(expertiseScore, "expertise");
         const fearCategory = categorize(fearScore, "fear");
 
         resultDiv.innerText =
             `Expertise: ${expertiseCategory} (${expertiseScore.toFixed(2)})
     Fear: ${fearCategory} (${fearScore.toFixed(2)})`;
+
+    await addDoc(collection(db, "responses"), {
+        expertiseScore,
+        fearScore,
+        expertiseCategory,
+        fearCategory,
+        ageGroup: ageGroupSelect.value,
+        background: backgroundSelect.value,
+        timestamp: serverTimestamp()
+    });
 
         if (chart) chart.destroy();
 
