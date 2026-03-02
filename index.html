@@ -74,38 +74,69 @@
         <legend>Expertise Questions (1 = None, 5 = Expert)</legend>
 
         <label for="eQ1">
-            Test 1
-            <input type="number" min="1" max="5" data-weight="2" class="expertise" id="eQ1">
+            How familiar are you with brain–computer interfacing technology?
+            <input type="number" min="1" max="5" data-weight="1.5" class="expertise" id="eQ1">
         </label>
 
         <label for="eQ2">
-            Test 2
-            <input type="number" min="1" max="5" data-weight="1" class="expertise" id="eQ2">
+            How knowledgeable are you on the clinical application of BCIs?
+            <input type="number" min="1" max="5" data-weight="1.5" class="expertise" id="eQ2">
         </label>
 
         <label for="eQ3">
-            Test 3
-            <input type="number" min="1" max="5" data-weight=".5" class="expertise" id="eQ3">
+            How well do you understand the inner workings of a BCI?
+            <input type="number" min="1" max="5" data-weight="2" class="expertise" id="eQ3">
         </label>
+
+        <label for="eQ4">
+            How much exposure have you had to scientific journals, documentaries, or other forms of reliable media about the topic?
+            <input type="number" min="1" max="5" data-weight="1" class="expertise" id="eQ4">
+        </label>
+
+        <label for="eQ5">
+            Have you ever studied this field?
+            <input type="number" min="1" max="5" data-weight="2" class="expertise" id="eQ5">
+        </label>
+
+        <div>
+            <label for="leqE">What do you believe is the most important current use of brain–computer interfaces?</label>
+            <textarea id="leqE" name="reaction_description" rows="5" placeholder="Enter your detailed response here..."></textarea>
+        </div>
+
     </fieldset>
 
     <fieldset>
         <legend>Fear Questions (1 = Not Afraid 5 = Terrified)</legend>
 
         <label for="fQ1">
-            Test 1
+            How concerned are you that BCIs could compromise your personal privacy?
             <input type="number" min="1" max="5" data-weight="2" class="fear" id="fQ1">
         </label>
 
         <label for="fQ2">
-            Test 2
-            <input type="number" min="1" max="5" data-weight="1" class="fear" id="fQ2">
+            How concerned are you that BCIs could control or influence your thoughts or actions?
+            <input type="number" min="1" max="5" data-weight="2" class="fear" id="fQ2">
         </label>
 
         <label for="fQ3">
-            Test 3
-            <input type="number" min="1" max="5" data-weight=".5" class="fear" id="fQ3">
+            How concerned are you that corporations and governments will misuse this technology?
+            <input type="number" min="1" max="5" data-weight="1.5" class="fear" id="fQ3">
         </label>
+
+        <label for="fQ4">
+            How concerned are you about BCIs long term impact on society?
+            <input type="number" min="1" max="5" data-weight="1.5" class="fear" id="fQ4">
+        </label>
+
+        <label for="fQ5">
+            How likely would you be to use a BCI yourself?
+            <input type="number" min="1" max="5" data-weight="1" class="fear" id="fQ5">
+        </label>
+
+        <div>
+            <label for="leqF">What do you believe is the most important current use of brain–computer interfaces?</label>
+            <textarea id="leqF" name="reaction_description" rows="5" placeholder="Enter your detailed response here..."></textarea>
+        </div>
     </fieldset>
 
 
@@ -135,10 +166,10 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
 
     window.db = db;
-    window.addDoc = addDoc:
+    window.addDoc = addDoc;
     window.collection = collection;
     window.serverTimestamp = serverTimestamp;
 
@@ -159,21 +190,21 @@
 
         if (age === "under13" || age === "13-15" || age === "16-18") {
             options = [
-                "a",
-                "b",
-                "c",
-                "d",
-                "e",
-                "f"
+                "Art",
+                "Science",
+                "History",
+                "Sports",
+                "English",
+                "Math"
             ];
         } else {
             options = [
-                "1",
-                "2",
-                "3",
-                "4",
-                "5",
-                "6"
+                "Art",
+                "Science",
+                "History",
+                "Sports",
+                "English",
+                "Math"
             ];
         }
 
