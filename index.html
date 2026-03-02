@@ -37,10 +37,6 @@
 </head>
 <body>
 
-<div class="chartContainer">
-    <canvas id="chart"></canvas>
-</div>
-
 <h1>Expertise and Fear Assessment</h1>
 
 <form id="surveyForm">
@@ -148,6 +144,10 @@
 </div>
 
 <p id="output"></p>
+
+<div class="chartContainer">
+    <canvas id="chart"></canvas>
+</div>
 
 <script type="module">
 
@@ -269,15 +269,32 @@
         const expertiseInputs = document.querySelectorAll(".expertise");
         const fearInputs = document.querySelectorAll(".fear");
 
-        const expertiseScore = calculateWeightedAverage(expertiseInputs);
-        const fearScore = calculateWeightedAverage(fearInputs);
-
         const allInputs = [...expertiseInputs, ...fearInputs];
 
         if (allInputs.some(input => input.value === "")) {
         alert("Please answer all expertise and fear questions.");
         return;
         }
+
+        const expertiseResponses = {};
+        const fearResponses = {};
+
+        expertiseInputs.forEach(input => {
+        expertiseResponses[input.id] = {
+        value: Number(input.value),
+        weight: Number(input.dataset.weight)
+        };
+    });
+
+        fearInputs.forEach(input => {
+        fearResponses[input.id] = {
+        value: Number(input.value),
+        weight: Number(input.dataset.weight)
+        };
+    });
+
+        const expertiseScore = calculateWeightedAverage(expertiseInputs);
+        const fearScore = calculateWeightedAverage(fearInputs);
 
         const expertiseCategory = categorize(expertiseScore, "expertise");
         const fearCategory = categorize(fearScore, "fear");
@@ -287,12 +304,19 @@
     Fear: ${fearCategory} (${fearScore.toFixed(2)})`;
 
     await addDoc(collection(db, "responses"), {
+        ageGroup: ageGroupSelect.value,
+        background: backgroundSelect.value,
+
         expertiseScore,
         fearScore,
         expertiseCategory,
         fearCategory,
-        ageGroup: ageGroupSelect.value,
-        background: backgroundSelect.value,
+
+        expertiseResponses,
+        fearResponses,
+
+        freeResponseExpertise: document.getElementById("leqE").value,
+        freeResponseFear: document.getElementById("leqF").value,
         timestamp: serverTimestamp()
     });
 
