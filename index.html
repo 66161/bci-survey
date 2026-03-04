@@ -70,7 +70,7 @@
         <legend>Expertise Questions (1 = None, 5 = Expert)</legend>
 
         <label for="eQ1">
-            How familiar are you with brain–computer interfacing technology?
+            How familiar are you with brain–computer interfacing(BCIs) technology?
             <input type="number" min="1" max="5" data-weight="1.5" class="expertise" id="eQ1">
         </label>
 
@@ -85,13 +85,17 @@
         </label>
 
         <label for="eQ4">
-            How much exposure have you had to scientific journals, documentaries, or other forms of reliable media about the topic?
+            How much exposure have you had to scientific journals, documentaries, or other forms of reliable media about BCIs?
             <input type="number" min="1" max="5" data-weight="1" class="expertise" id="eQ4">
         </label>
 
-        <label for="eQ5">
+        <label>
             Have you ever studied this field?
-            <input type="number" min="1" max="5" data-weight="2" class="expertise" id="eQ5">
+            <br>
+            <input type="radio" name="studyE" value="5" data-weight="2" class="expertise" id="eQ5Y"> Yes
+        </label>
+        <label>
+            <input type="radio" name="studyE" value="1" data-weight="2" class="expertise" id="eQ5N"> No
         </label>
 
         <div>
@@ -130,7 +134,7 @@
         </label>
 
         <div>
-            <label for="leqF">What do you believe is the most important current use of brain–computer interfaces?</label>
+            <label for="leqF">What is your biggest concern, if any, about brain-computer interfacing technology?</label>
             <textarea id="leqF" name="reaction_description" rows="5" placeholder="Enter your detailed response here..."></textarea>
         </div>
     </fieldset>
@@ -204,7 +208,11 @@
                 "History",
                 "Sports",
                 "English",
-                "Math"
+                "Math",
+                "Theology",
+                "Language",
+                "Buisness",
+                "Medical"
             ];
         }
 
@@ -257,107 +265,142 @@
         }
     }
 
+form.addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-    form.addEventListener("submit", async function (e) {
-        e.preventDefault();
-
-        if (!ageGroupSelect.value || !backgroundSelect.value) {
+    if (!ageGroupSelect.value || !backgroundSelect.value) {
         alert("Please select your age group and background.");
         return;
-        }
+    }
 
-        const expertiseInputs = document.querySelectorAll(".expertise");
-        const fearInputs = document.querySelectorAll(".fear");
+    const expertiseInputs = document.querySelectorAll(".expertise");
+    const fearInputs = document.querySelectorAll(".fear");
 
-        const allInputs = [...expertiseInputs, ...fearInputs];
+    const studySelected = document.querySelector('input[name="studyE"]:checked');
+    if (!studySelected) {
+        alert("Please answer whether you have studied this field.");
+        return;
+    }
 
-        if (allInputs.some(input => input.value === "")) {
+    const numericInputs = [...expertiseInputs, ...fearInputs]
+        .filter(input => input.type === "number");
+
+    if (numericInputs.some(input => input.value === "")) {
         alert("Please answer all expertise and fear questions.");
         return;
+    }
+
+    const expertiseArray = [];
+    const expertiseResponses = {};
+    const fearResponses = {};
+
+    expertiseInputs.forEach(input => {
+        if (input.type === "radio") {
+            if (input.checked) {
+                expertiseArray.push(input);
+                expertiseResponses[input.id] = {
+                    value: Number(input.value),
+                    weight: Number(input.dataset.weight)
+                };
+            }
+        } else {
+            expertiseArray.push(input);
+            expertiseResponses[input.id] = {
+                value: Number(input.value),
+                weight: Number(input.dataset.weight)
+            };
+        }
+    });
+
+    const processedFearInputs = [];
+
+    fearInputs.forEach(input => {
+        let value = Number(input.value);
+
+        if (input.id === "fQ5") {
+            value = 6 - value;
         }
 
-        const expertiseResponses = {};
-        const fearResponses = {};
+        processedFearInputs.push({
+            value: value,
+                weight: Number(input.dataset.weight)
+        });
 
-        expertiseInputs.forEach(input => {
-        expertiseResponses[input.id] = {
-        value: Number(input.value),
-        weight: Number(input.dataset.weight)
-        };
-    });
-
-        fearInputs.forEach(input => {
         fearResponses[input.id] = {
-        value: Number(input.value),
-        weight: Number(input.dataset.weight)
+            value: value,
+                weight: Number(input.dataset.weight)
         };
     });
 
-        const expertiseScore = calculateWeightedAverage(expertiseInputs);
-        const fearScore = calculateWeightedAverage(fearInputs);
+    const expertiseScore = calculateWeightedAverage(expertiseArray);
 
-        const expertiseCategory = categorize(expertiseScore, "expertise");
-        const fearCategory = categorize(fearScore, "fear");
+    const fearScore = calculateWeightedAverage(
+        processedFearInputs.map(item => ({
+            value: item.value,
+                dataset: { weight: item.weight }
+        }))
+    );
 
-        resultDiv.innerText =
-            `Expertise: ${expertiseCategory} (${expertiseScore.toFixed(2)})
-    Fear: ${fearCategory} (${fearScore.toFixed(2)})`;
+    const expertiseCategory = categorize(expertiseScore, "expertise");
+    const fearCategory = categorize(fearScore, "fear");
+
+    resultDiv.innerText =
+        `Expertise: ${expertiseCategory} (${expertiseScore.toFixed(2)})
+        Fear: ${fearCategory} (${fearScore.toFixed(2)})`;
 
     await addDoc(collection(db, "responses"), {
         ageGroup: ageGroupSelect.value,
         background: backgroundSelect.value,
-
         expertiseScore,
         fearScore,
         expertiseCategory,
         fearCategory,
-
         expertiseResponses,
         fearResponses,
-
         freeResponseExpertise: document.getElementById("leqE").value,
         freeResponseFear: document.getElementById("leqF").value,
         timestamp: serverTimestamp()
     });
 
-        if (chart) chart.destroy();
+    if (chart) chart.destroy();
 
-        chart = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [{
-                    label: 'User Position',
-                    data: [{
-                        x: expertiseScore,
-                        y: fearScore,
-                    }],
-                    pointRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        min: 1,
-                        max: 5,
-                        title: {
-                            display: true,
-                            text: 'Expertise'
-                        }
-                    },
-                    y: {
-                        min: 1,
-                        max: 5,
-                        title: {
-                            display: true,
-                            text: 'Fear'
-                        }
+    chart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'User Position',
+                data: [{
+                    x: expertiseScore,
+                    y: fearScore,
+                }],
+                pointRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    min: 1,
+                    max: 5,
+                    title: {
+                        display: true,
+                        text: 'Expertise'
+                    }
+                },
+                y: {
+                    min: 1,
+                    max: 5,
+                    title: {
+                        display: true,
+                        text: 'Fear'
                     }
                 }
             }
-        });
+        }
     });
+});
+
 </script>
 
 
